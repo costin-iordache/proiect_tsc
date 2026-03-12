@@ -56,6 +56,4 @@ interface spi_intf(input logic clk,reset);
   else $error("SCLK is active while SS is inactive");
   SCLK_VALID: cover property (p_sclk_active_only_when_ss_active);
 
-
-
 endinterface
