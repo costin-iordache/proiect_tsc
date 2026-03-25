@@ -3,15 +3,16 @@
 //-------------------------------------------------------------------------
 //tbench_top or testbench top, this is the top most file, in which DUT(Design Under Test) and Verification environment are connected. 
 //-------------------------------------------------------------------------
-
+`timescale 1ns/1ps
 //including interface and testcase files
-`include "interface.sv"
+`include "vr_interface.sv"
+`include "spi_interface.sv"
 
 //-------------------------[NOTE]---------------------------------
 //Particular testcase can be run by uncommenting, and commenting the rest
 //`include "random_test.sv"
 //`include "wr_rd_test.sv"
-`include "default_rd_test.sv"
+`include "basic_test.sv"
 //----------------------------------------------------------------
 
 
@@ -26,31 +27,28 @@ module testbench;
   
   //reset Generation
   initial begin
-    reset = 1;
-    #15 reset =0;
+    reset = 0;
+    #15 reset = 1;
   end
-  
   
   //creatinng instance of interface, inorder to connect DUT and testcase
-  mem_intf intf(clk,reset);
+  vr_intf vr_intf(clk,reset);
+  spi_intf spi_intf(clk,reset);
   
   //Testcase instance, interface handle is passed to test as an argument
-  test t1(intf);
+  test t1(vr_intf, spi_intf);
   
   //DUT instance, interface signals are connected to the DUT ports
-  memory DUT (
-    .clk(intf.clk),
-    .reset(intf.reset),
-    .addr(intf.addr),
-    .wr_en(intf.wr_en),
-    .rd_en(intf.rd_en),
-    .wdata(intf.wdata),
-    .rdata(intf.rdata)
-   );
+  spi_master DUT (
+    .clk    (vr_intf.clk),
+    .rst_n  (vr_intf.reset),
+    .data_i (vr_intf.data),
+    .valid  (vr_intf.valid),
+    .ready  (vr_intf.ready),
+    .ss     (spi_intf.ss),
+    .sclk   (spi_intf.sclk),
+    .mosi   (spi_intf.mosi),
+    .miso   (spi_intf.miso)
+    );
   
-  //enabling the wave dump
-  initial begin 
-    $dumpfile("dump.vcd"); $dumpvars;
-    #10ns $finish();
-  end
 endmodule

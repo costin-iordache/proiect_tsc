@@ -3,11 +3,11 @@
 //-------------------------------------------------------------------------
 //driverul preia datele de la generator, la nivel abstract, si le trimite DUT-ului conform protocolului de comunicatie pe interfata respectiva
 //gets the packet from generator and drive the transaction paket items into interface (interface is connected to DUT, so the items driven into interface signal will get driven in to DUT) 
-
+// `include "spi_transaction.sv"
 
 //se declara macro-ul DRIV_IF care va reprezenta interfata pe care driverul va trimite date DUT-ului
-`define DRIV_IF spi_vif.DRIVER.driver_cb
-class driver;
+`define SPI_DRIV_IF spi_vif.DRIVER.driver_cb
+class spi_driver;
   
   //used to count the number of transactions
   int no_transactions;
@@ -32,14 +32,14 @@ class driver;
   task reset;
     wait(spi_vif.reset);
     $display("--------- [DRIVER] Reset Started ---------");
-    `DRIV_IF.miso <= 0;      
+    `SPI_DRIV_IF.miso <= 0;      
     wait(!spi_vif.reset);
     $display("--------- [DRIVER] Reset Ended ---------");
   endtask
   
   //drives the transaction items to interface signals
   task drive;
-      transaction trans;
+    spi_transaction trans;
       int bit_index = 0;
       
     //se asteapta ca modulul sa iasa din reset
@@ -48,17 +48,17 @@ class driver;
     //daca nu are date de la generator, driverul ramane cu executia la linia de mai jos, pana cand primeste respectivele date
       gen2driv.get(trans);
       $display("--------- [DRIVER-TRANSFER: %0d] ---------",no_transactions);
-      wait(!`DRIV_IF.ss);
+      wait(!`SPI_DRIV_IF.ss);
       fork
         begin 
-          while(bit_index < DATA_WIDTH) begin 
-            `DRIV_IF.miso <= trans.data[bit_index];
-            @(negedge `DRIV_IF.sclk);
+          while(bit_index < 8) begin 
+            `SPI_DRIV_IF.miso <= trans.miso_data[bit_index];
+            @(negedge `SPI_DRIV_IF.sclk);
             bit_index++;
           end
         end
         begin 
-          wait(`DRIV_IF.ss);
+          wait(`SPI_DRIV_IF.ss);
         end
       join_any
       disable fork;

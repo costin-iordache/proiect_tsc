@@ -5,7 +5,6 @@
 //gets the packet from generator and drive the transaction paket items into interface (interface is connected to DUT, so the items driven into interface signal will get driven in to DUT) 
 
 //se declara macro-ul DRIV_IF care va reprezenta interfata pe care driverul va trimite date DUT-ului
-`define DRIV_IF vr_vif.DRIVER.driver_cb
 class reset_driver;
   
   //creating virtual interface handle
@@ -22,9 +21,9 @@ class reset_driver;
   
   //drives the transaction items to interface signals
   task drive;
-    `DRIV_IF.reset <= 1;
-    repeat(3) @(posedge `DRIV_IF.clk);
-    `DRIV_IF.reset <= 0;
+    vr_vif.reset <= 0;
+    repeat(3) @(posedge vr_vif.clk);
+    vr_vif.reset <= 1;
     -> reset_done;
   endtask
         

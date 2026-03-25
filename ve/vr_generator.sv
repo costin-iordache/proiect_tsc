@@ -1,0 +1,37 @@
+//-------------------------------------------------------------------------
+//            www.verificationguide.com
+//-------------------------------------------------------------------------
+class vr_generator;
+  //clasa contine doua atribute de tipul "transaction"
+  rand vr_transaction trans,tr;
+  //repeat_count arata numarul de tranzactii care vor fi generate
+  int  repeat_count;
+  //tipul de date mailbox, care poate fi vazut ca o structura de tip coada, reprezinta "portul" prin care generatorul trimite date driver-ului.
+  //mailbox, to generate and send the packet to driver
+  mailbox gen2driv;
+  //declararea unui eveniment
+  event e_ended;
+
+  //constructor
+  function new(mailbox gen2driv,event e_ended);
+    //getting the mailbox handle from env, in order to share the transaction packet between the generator and driver, the same mailbox is shared between both.
+    this.gen2driv = gen2driv;
+    this.e_ended    = e_ended;
+    trans = new();
+  endfunction
+
+  //generatorul aleatorizeaza si transmite spre exterior prin "portul" de tip mailbox continutul tranzactiilor (al caror numar este egal cu repeat_count)
+  //main task, generates(create and randomizes) the repeat_count number of transaction packets and puts into mailbox
+  task main();
+    $display("VALID READY GEN STARTED \n");
+    repeat(repeat_count) begin
+      if( !trans.randomize() )
+          $fatal("Gen:: trans randomization failed");      
+      tr = trans.do_copy();
+      gen2driv.put(tr);
+    end
+    //se semnaleaza sfarsitul transmiterii datelor de catre generator
+    -> e_ended;
+  endtask
+ 
+endclass
