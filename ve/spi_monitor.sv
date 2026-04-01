@@ -53,6 +53,7 @@ class spi_monitor;
   endtask
 
   task main(); 
+    $display("[%0t] SPI MONITOR STARTED \n", $time);
     forever begin 
       fork
         begin 

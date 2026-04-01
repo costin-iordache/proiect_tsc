@@ -29,14 +29,16 @@ module testbench;
   initial begin
     reset = 0;
     #15 reset = 1;
+    $display("[%0t] Initial Reset Deasserted \n", $time);
   end
   
   //creatinng instance of interface, inorder to connect DUT and testcase
   vr_intf vr_intf(clk,reset);
   spi_intf spi_intf(clk,reset);
+  reset_intf rst_intf(clk,reset);
   
   //Testcase instance, interface handle is passed to test as an argument
-  test t1(vr_intf, spi_intf);
+  test t1(vr_intf, spi_intf, rst_intf);
   
   //DUT instance, interface signals are connected to the DUT ports
   spi_master DUT (

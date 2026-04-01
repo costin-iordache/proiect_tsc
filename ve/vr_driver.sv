@@ -30,11 +30,11 @@ class vr_driver;
   
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
-    wait(vr_vif.reset);
+    wait(!vr_vif.reset);
     $display("--------- [DRIVER] Reset Started ---------");
     `VR_DRIV_IF.data <= 0;
     `VR_DRIV_IF.valid <= 0;
-    wait(!vr_vif.reset);
+    wait(vr_vif.reset);
     $display("--------- [DRIVER] Reset Ended ---------");
   endtask
   

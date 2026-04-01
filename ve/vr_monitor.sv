@@ -26,6 +26,7 @@ class vr_monitor;
   
   //Samples the interface signal and send the sample packet to scoreboard
   task main;
+      $display("[%0t] VALID READY MONITOR STARTED \n", $time);
     forever begin
       //se declara si se creaza obiectul de tip tranzactie care va contine datele preluate de pe interfata
       vr_transaction trans;

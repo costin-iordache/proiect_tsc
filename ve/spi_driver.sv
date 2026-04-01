@@ -30,10 +30,10 @@ class spi_driver;
   
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
-    wait(spi_vif.reset);
+    wait(!spi_vif.reset);
     $display("--------- [DRIVER] Reset Started ---------");
     `SPI_DRIV_IF.miso <= 0;      
-    wait(!spi_vif.reset);
+    wait(spi_vif.reset);
     $display("--------- [DRIVER] Reset Ended ---------");
   endtask
   
@@ -69,6 +69,7 @@ class spi_driver;
     
   //Cele doua fire de executie de mai jos ruleaza in paralel. Dupa ce primul dintre ele se termina al doilea este intrerupt automat. Daca se activeaza reset-ul, nu se mai transmit date. 
   task main;
+    $display("[%0t] SPI DRIVER STARTED \n", $time);
     forever begin
       fork
         //Thread-1: Waiting for reset

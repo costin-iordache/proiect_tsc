@@ -3,7 +3,7 @@
 //-------------------------------------------------------------------------
 `define DATA_WIDTH 8
 
-interface vr_intf(input logic clk, output logic reset);
+interface vr_intf(input logic clk, reset);
   
   //declaring the signals
   logic valid;

@@ -8,22 +8,22 @@
 class reset_driver;
   
   //creating virtual interface handle
-  virtual vr_intf vr_vif;
+  virtual reset_intf rst_vif;
   
   event reset_done;
   
   //constructor
-  function new(virtual vr_intf vr_vif);
+  function new(virtual reset_intf rst_vif);
     //cand se creaza driverul, interfata pe care acesta trimite datele este conectata la interfata reala a DUT-ului
     //getting the interface
-    this.vr_vif = vr_vif;
+    this.rst_vif = rst_vif;
   endfunction
   
   //drives the transaction items to interface signals
   task drive;
-    vr_vif.reset <= 0;
-    repeat(3) @(posedge vr_vif.clk);
-    vr_vif.reset <= 1;
+    rst_vif.reset <= 0;
+    repeat(3) @(posedge rst_vif.clk);
+    rst_vif.reset <= 1;
     -> reset_done;
   endtask
         

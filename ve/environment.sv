@@ -48,14 +48,16 @@ class environment;
   //virtual interface
   virtual spi_intf spi_vif;
   virtual vr_intf vr_vif;
+  virtual reset_intf rst_vif;
   
   //constructor
-  function new(virtual vr_intf vr_vif, virtual spi_intf spi_vif);
+  function new(virtual vr_intf vr_vif, virtual spi_intf spi_vif, virtual reset_intf rst_vif);
     //get the interface from test
     this.vr_vif = vr_vif;
     this.spi_vif = spi_vif;
+    this.rst_vif = rst_vif;
 
-    rst_drv = new(vr_vif);
+    rst_drv = new(rst_vif);
     
     //creating the mailbox (Same handle will be shared across generator and driver)
     vr_gen2driv = new();
@@ -76,26 +78,35 @@ class environment;
   
   //
   task pre_test();
+    $display("[%0t] [ENVIRONMENT] PRE-TEST : Resetting the DUT... \n", $time);
     vr_driv.reset();
     spi_driv.reset();
+    $display("[%0t] [ENVIRONMENT] PRE-TEST Finish \n", $time);
   endtask
   
   task test();
+    $display("[%0t] [ENVIRONMENT] Starting the test... \n", $time);
     fork 
-    vr_gen.main();
-    spi_gen.main();
-    vr_mon.main();
-    spi_mon.main();
-    join_any
+      vr_gen.main();
+      spi_gen.main();
+      vr_driv.main();
+      spi_driv.main();
+      vr_mon.main();
+      spi_mon.main();
+    join
+    disable fork;
+    $display("[%0t] [ENVIRONMENT] TEST Finish \n", $time);
   endtask
   
   task post_test();
+    $display("[%0t] [ENVIRONMENT] POST-TEST : Test Ended... \n", $time);
     wait(vr_gen_ended.triggered);
     wait(spi_gen_ended.triggered);
     //se urmareste ca toate datele generate sa fie transmise la DUT si sa ajunga si la scoreboard
     wait(vr_gen.repeat_count == vr_driv.no_transactions);
     wait(spi_gen.repeat_count == spi_driv.no_transactions);
     // wait(vr_gen.repeat_count == scb.no_transactions);
+    $display("[%0t] [ENVIRONMENT] POST-TEST Finish \n", $time);
   endtask  
   
   function report();
@@ -105,6 +116,7 @@ class environment;
   
   //run task
   task run;
+    $display("[%0t] [ENVIRONMENT] Starting environment... \n", $time);
     pre_test();
     test();
     post_test();
