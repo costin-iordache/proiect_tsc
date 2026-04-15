@@ -10,7 +10,8 @@
 class vr_driver;
   
   //used to count the number of transactions
-  int no_transactions;
+  int no_transactions = 0;
+  int valid_trans = 0;
   
   //creating virtual interface handle
   virtual vr_intf vr_vif;
@@ -31,11 +32,11 @@ class vr_driver;
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
     wait(!vr_vif.reset);
-    $display("--------- [DRIVER] Reset Started ---------");
+    $display("--------- [VR DRIVER] Reset Started ---------");
     `VR_DRIV_IF.data <= 0;
     `VR_DRIV_IF.valid <= 0;
     wait(vr_vif.reset);
-    $display("--------- [DRIVER] Reset Ended ---------");
+    $display("--------- [VR DRIVER] Reset Ended ---------");
   endtask
   
   //drives the transaction items to interface signals
@@ -48,16 +49,15 @@ class vr_driver;
     
     //daca nu are date de la generator, driverul ramane cu executia la linia de mai jos, pana cand primeste respectivele date
       gen2driv.get(trans);
-      wait(`VR_DRIV_IF.ready); //wait until DUT is ready to accept the data
-      $display("--------- [DRIVER-TRANSFER: %0d] ---------",no_transactions);
+      wait(`VR_DRIV_IF.ready == 1'b1); //wait until DUT is ready to accept the data
+      repeat(trans.delay) @(posedge vr_vif.DRIVER.clk);
+      `VR_DRIV_IF.valid <= trans.valid;
+      `VR_DRIV_IF.data <= trans.wdata;
       @(posedge vr_vif.DRIVER.clk);
-        `VR_DRIV_IF.valid <= trans.valid;
-        `VR_DRIV_IF.data <= trans.wdata;
-        $display("\tWDATA = %0h",trans.wdata);
-        @(posedge vr_vif.DRIVER.clk);
-        `VR_DRIV_IF.valid <= 0;
-      $display("-----------------------------------------");
+      `VR_DRIV_IF.valid <= 0;
       no_transactions++;
+      if(trans.valid) valid_trans++;
+      $display("--------- [VR DRIVER-TRANSFER: %0d] --------- \n \tVALID = %0b \n \tWDATA = %0h",no_transactions, trans.valid, trans.wdata);
   endtask
   
     

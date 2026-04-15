@@ -15,27 +15,20 @@
 `include "basic_test.sv"
 //----------------------------------------------------------------
 
-
 module testbench;
   
   //clock and reset signal declaration
   bit clk;
-  bit reset;
   
   //clock generation
   always #5 clk = ~clk;
   
-  //reset Generation
-  initial begin
-    reset = 0;
-    #15 reset = 1;
-    $display("[%0t] Initial Reset Deasserted \n", $time);
-  end
+  
   
   //creatinng instance of interface, inorder to connect DUT and testcase
-  vr_intf vr_intf(clk,reset);
-  spi_intf spi_intf(clk,reset);
-  reset_intf rst_intf(clk,reset);
+  vr_intf vr_intf(clk,rst_intf.reset);
+  spi_intf spi_intf(clk,rst_intf.reset);
+  reset_intf rst_intf(clk);
   
   //Testcase instance, interface handle is passed to test as an argument
   test t1(vr_intf, spi_intf, rst_intf);
@@ -43,7 +36,7 @@ module testbench;
   //DUT instance, interface signals are connected to the DUT ports
   spi_master DUT (
     .clk    (vr_intf.clk),
-    .rst_n  (vr_intf.reset),
+    .rst_n  (rst_intf.reset),
     .data_i (vr_intf.data),
     .valid  (vr_intf.valid),
     .ready  (vr_intf.ready),

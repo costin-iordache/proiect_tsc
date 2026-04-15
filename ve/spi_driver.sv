@@ -31,10 +31,10 @@ class spi_driver;
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
     wait(!spi_vif.reset);
-    $display("--------- [DRIVER] Reset Started ---------");
+    $display("--------- [SPI DRIVER] Reset Started ---------");
     `SPI_DRIV_IF.miso <= 0;      
     wait(spi_vif.reset);
-    $display("--------- [DRIVER] Reset Ended ---------");
+    $display("--------- [SPI DRIVER] Reset Ended ---------");
   endtask
   
   //drives the transaction items to interface signals
@@ -47,11 +47,11 @@ class spi_driver;
     
     //daca nu are date de la generator, driverul ramane cu executia la linia de mai jos, pana cand primeste respectivele date
       gen2driv.get(trans);
-      $display("--------- [DRIVER-TRANSFER: %0d] ---------",no_transactions);
       wait(!`SPI_DRIV_IF.ss);
+      $display("--------- [SPI DRIVER-TRANSFER: %0d] ---------",no_transactions);
       fork
         begin 
-          while(bit_index < 8) begin 
+          while(bit_index < 4) begin 
             `SPI_DRIV_IF.miso <= trans.miso_data[bit_index];
             @(negedge `SPI_DRIV_IF.sclk);
             bit_index++;
@@ -62,7 +62,6 @@ class spi_driver;
         end
       join_any
       disable fork;
-      $display("-----------------------------------------");
       no_transactions++;
   endtask
   

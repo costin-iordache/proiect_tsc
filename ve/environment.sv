@@ -41,6 +41,8 @@ class environment;
   //mailbox handle's
   mailbox spi_gen2driv;
   mailbox spi_mon2scb;
+
+  coverage cov;
   
   //event for synchronization between generator and test
   event spi_gen_ended;
@@ -57,6 +59,8 @@ class environment;
     this.spi_vif = spi_vif;
     this.rst_vif = rst_vif;
 
+    cov = new();
+
     rst_drv = new(rst_vif);
     
     //creating the mailbox (Same handle will be shared across generator and driver)
@@ -69,18 +73,21 @@ class environment;
     //creating generator and driver
     vr_gen  = new(vr_gen2driv,vr_gen_ended);
     vr_driv = new(vr_vif,vr_gen2driv);
-    vr_mon  = new(vr_vif,vr_mon2scb);
+    vr_mon  = new(vr_vif,vr_mon2scb,cov);
 
     spi_gen  = new(spi_gen2driv,spi_gen_ended);
     spi_driv = new(spi_vif,spi_gen2driv);
-    spi_mon  = new(spi_vif,spi_mon2scb);
+    spi_mon  = new(spi_vif,spi_mon2scb,cov);
+
   endfunction
   
   //
   task pre_test();
     $display("[%0t] [ENVIRONMENT] PRE-TEST : Resetting the DUT... \n", $time);
-    vr_driv.reset();
-    spi_driv.reset();
+    fork
+      vr_driv.reset();
+      spi_driv.reset();
+    join
     $display("[%0t] [ENVIRONMENT] PRE-TEST Finish \n", $time);
   endtask
   
@@ -93,6 +100,7 @@ class environment;
       spi_driv.main();
       vr_mon.main();
       spi_mon.main();
+      // #1200ns;
     join
     disable fork;
     $display("[%0t] [ENVIRONMENT] TEST Finish \n", $time);
@@ -104,8 +112,10 @@ class environment;
     wait(spi_gen_ended.triggered);
     //se urmareste ca toate datele generate sa fie transmise la DUT si sa ajunga si la scoreboard
     wait(vr_gen.repeat_count == vr_driv.no_transactions);
-    wait(spi_gen.repeat_count == spi_driv.no_transactions);
+    wait(vr_driv.valid_trans == spi_driv.no_transactions);
     // wait(vr_gen.repeat_count == scb.no_transactions);
+    $display("[%0t] [ENVIRONMENT] Coverage Results: \n", $time);
+    cov.print_coverage();
     $display("[%0t] [ENVIRONMENT] POST-TEST Finish \n", $time);
   endtask  
   
@@ -118,8 +128,11 @@ class environment;
   task run;
     $display("[%0t] [ENVIRONMENT] Starting environment... \n", $time);
     pre_test();
-    test();
-    post_test();
+    fork 
+      test();
+      post_test();
+    join_any
+    disable fork;
     report();
     //linia de mai jos este necesara pentru ca simularea sa sa termine
     $finish;

@@ -6,7 +6,7 @@
 class spi_transaction;
   //se declara atributele clasei
   //campurile declarate cu cuvantul cheie rand vor primi valori aleatoare la aplicarea functiei randomize()
-  rand bit [7:0] miso_data;
+  rand bit [3:0] miso_data;
 
   //constrangerile reprezinta un tip de membru al claselor din SystemVerilog, pe langa atribute si metode
   //aceasta constrangere specifica faptul ca se executa fie o scriere, fie o citire

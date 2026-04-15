@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------
 //						www.verificationguide.com
 //-------------------------------------------------------------------------
-`define DATA_WIDTH 8
+`define DATA_WIDTH 4
 
 interface vr_intf(input logic clk, reset);
   

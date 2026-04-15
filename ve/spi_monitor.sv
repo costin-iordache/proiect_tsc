@@ -14,41 +14,51 @@ class spi_monitor;
   //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
   //creating mailbox handle
   mailbox mon2scb;
+
+  int num_trans = 0; // numara tranzactiile colectate de monitor
+
+  coverage cov;
   
   //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
   //constructor
-  function new(virtual spi_intf spi_vif,mailbox mon2scb);
+  function new(virtual spi_intf spi_vif,mailbox mon2scb,coverage cov);
     //getting the interface
     this.spi_vif = spi_vif;
     //getting the mailbox handles from  environment 
     this.mon2scb = mon2scb;
+    this.cov = cov;
   endfunction
   
   //Samples the interface signal and send the sample packet to scoreboard
   task collect();
     forever begin
-      int bit_index = 0;
+      int bit_index = 4;
       //se declara si se creaza obiectul de tip tranzactie care va contine datele preluate de pe interfata
       spi_transaction trans;
       trans = new();
 
       //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
-      wait(!`SPI_IF.ss);
+      wait(`SPI_IF.ss == 1'b0);
+      num_trans++;
+      // $display("[%0t] {SPI MONITOR} Transaction %0d started", $time, num_trans);
       fork
         begin 
-          while(!`SPI_IF.ss) begin 
+          while(`SPI_IF.ss == 1'b0 && bit_index !== 0) begin 
             @(negedge `SPI_IF.sclk);
-            trans.miso_data[bit_index] = `SPI_IF.mosi;
-            bit_index++;
+            trans.miso_data[bit_index-1] = `SPI_IF.mosi;
+            bit_index--;
           end
         end
         begin 
-          wait(`SPI_IF.ss);
+          wait(`SPI_IF.ss == 1'b1);
         end
       join_any
       disable fork;
       // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
+      $display("[%0t] {SPI MONITOR} Transaction %0d: miso_data = %0h", $time, num_trans, trans.miso_data);
       mon2scb.put(trans);
+      cov.sample_spi(trans);
+
     end
   endtask
 

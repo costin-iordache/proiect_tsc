@@ -14,14 +14,17 @@ class vr_monitor;
   //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
   //creating mailbox handle
   mailbox mon2scb;
+
+  coverage cov;
   
   //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
   //constructor
-  function new(virtual vr_intf vr_vif,mailbox mon2scb);
+  function new(virtual vr_intf vr_vif,mailbox mon2scb,coverage cov);
     //getting the interface
     this.vr_vif = vr_vif;
     //getting the mailbox handles from  environment 
     this.mon2scb = mon2scb;
+    this.cov = cov;
   endfunction
   
   //Samples the interface signal and send the sample packet to scoreboard
@@ -37,6 +40,7 @@ class vr_monitor;
         trans.wdata  = `MON_IF.data;
       // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
         mon2scb.put(trans);
+        cov.sample_vr(trans);
     end
   endtask
   

@@ -6,7 +6,7 @@
 class vr_transaction;
   //se declara atributele clasei
   //campurile declarate cu cuvantul cheie rand vor primi valori aleatoare la aplicarea functiei randomize()
-  rand bit [7:0] wdata;
+  rand bit [3:0] wdata;
   rand int delay;
   rand bit valid;
 
@@ -14,7 +14,7 @@ class vr_transaction;
   //aceasta constrangere specifica faptul ca se executa fie o scriere, fie o citire
   //constrangerile sunt aplicate de catre compilator atunci cand atributele clasei primesc valori aleatoare in urma folosirii functiei randomize
      constraint wdata_c;
-     constraint delay_c { delay < 10; };
+     constraint delay_c { delay inside {[0:10]}; };
   
   //aceasta functie este apelata dupa aplicarea functiei randomize() asupra obiectelor apartinand acestei clase
   //aceasta functie afiseaza valorile aleatorizate ale atributelor clasei
