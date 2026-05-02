@@ -9,53 +9,81 @@ class scoreboard;
    
   //se declara portul prin care scoreboardul primeste date de la monitor; daca sunt mai multe monitoare, se pot declara mai multe porturi de acest tip
   //creating mailbox handle
-  mailbox mon2scb;
+  mailbox spi_mon2scb;
+  mailbox  vr_mon2scb;
   
-  //used to count the number of transactions
-  int no_transactions;
+  //used to count the number of transactions and errors
+  int errors;
+  int no_trans;
   
-  //array to use as local memory
-  bit [7:0] mem[4];
+  spi_transaction spi_q [$];
+  vr_transaction vr_q [$];
    
   //se declara si se creaza colectorul de coverage
   coverage colector_coverage;
 
   //constructor
-  function new(mailbox mon2scb);
+  function new(mailbox spi_mon2scb, mailbox vr_mon2scb);
     //getting the mailbox handles from  environment 
-    this.mon2scb = mon2scb;
-    foreach(mem[i]) mem[i] = 8'hFF;
+    this.spi_mon2scb = spi_mon2scb;
+    this.vr_mon2scb = vr_mon2scb;
     colector_coverage = new();
   endfunction
   
   //stores wdata and compare rdata with stored data
   task main;
-    transaction trans;
-    forever begin
-      #50;
-      //se preiau datele de la monitor
-      mon2scb.get(trans);
-      //mai jos se gaseste implementarea unui checker
-      if(trans.rd_en) begin
-        if(mem[trans.addr] != trans.rdata) 
-          $error("[SCB-FAIL] Addr = %0h,\n \t   Data :: Expected = %0h Actual = %0h",trans.addr,mem[trans.addr],trans.rdata);
-        else 
-          begin
-          $display("[SCB-PASS] Addr = %0h,\n \t   Data :: Expected = %0h Actual = %0h",trans.addr,mem[trans.addr],trans.rdata);
-          //daca tranzactia s-a executat cu succes, se colecteaza coverage-ul
-            colector_coverage.sample(trans);
-          end
-      end
-      //cele doua lini de mai jos reprezinta functionalitatea DUT-ului, care este implementata si in cadrul scoreboard-ului
-      else if(trans.wr_en)
-        begin
-          mem[trans.addr] = trans.wdata;
-          //colectez coverage-ul si pentru tranzactiile de tip scriere la memorie
-          colector_coverage.sample(trans);
+    spi_transaction spi_trans;
+    vr_transaction vr_trans;
+    $display("[%0t] SCOREBOARD STARTED \n", $time);
+    fork
+      begin 
+        forever begin 
+          //getting the spi transaction from monitor
+          spi_mon2scb.get(spi_trans);
+          $display("[%0t] [SCOREBOARD] Received SPI Transaction %0d: %0h", $time, spi_q.size(), spi_trans.miso_data);
+          spi_q.push_back(spi_trans);
         end
-
-      no_transactions++;
-    end
+      end
+      begin 
+        forever begin 
+          //getting the vr transaction from monitor
+          vr_mon2scb.get(vr_trans);
+          $display("[%0t] [SCOREBOARD] Received VR Transaction %0d: %0h", $time, vr_q.size(), vr_trans.wdata);
+          vr_q.push_back(vr_trans);
+        end
+      end
+    join
+    disable fork;
   endtask
+
+function void compare_transactions();
+  spi_transaction spi_trans;
+  vr_transaction vr_trans;
+
+  no_trans = (spi_q.size() < vr_q.size()) ? spi_q.size() : vr_q.size();
+  for(int i = 0; i < no_trans; i++) begin
+    spi_trans = spi_q.pop_front();
+    vr_trans = vr_q.pop_front();
+    if(spi_trans.miso_data != vr_trans.wdata) begin
+      $error("[SCOREBOARD] Mismatch in transaction %0d: Expected MOSI data = %0b, Received MOSI data = %0b", i, vr_trans.wdata, spi_trans.miso_data);
+      errors++;
+    end
+  end
+
+  if(spi_q.size() != 0 && vr_q.size() != 0) begin
+    $error("[SCOREBOARD] Error: Remaining transactions in queues. SPI Queue Size: %0d, VR Queue Size: %0d", spi_q.size(), vr_q.size());
+    errors++;
+  end
+
+endfunction
+
+function void print_results();
+  $display("[SCOREBOARD] Total Transactions: %0d", no_trans);
+  if(errors == 0) begin
+    $display("[SCOREBOARD] All transactions matched successfully!");
+  end else begin
+    $error("[SCOREBOARD] Mismatches in %0d transactions.", errors);
+  end
+endfunction
   
 endclass

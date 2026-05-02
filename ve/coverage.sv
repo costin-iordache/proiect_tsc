@@ -9,7 +9,11 @@ class coverage;
     //linia de mai jos este adaugata deoarece, daca sunt mai multe instante pentru care se calculeaza coverage-ul, noi vrem sa stim pentru fiecare dintre ele, separat, ce valoare avem.
     option.per_instance = 1;
     valid_enable_cp: coverpoint vr_trans_covered.valid;
-    delay_cp: coverpoint vr_trans_covered.delay;
+    delay_cp: coverpoint vr_trans_covered.delay {
+      bins short_delay = {[0:2]};
+      bins medium_delay = {[3:5]};
+      bins long_delay = {[6:10]};
+    }
     
     write_data_cp: coverpoint vr_trans_covered.wdata {
       bins big_values = {[191:255]};

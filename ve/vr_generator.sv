@@ -25,6 +25,7 @@ class vr_generator;
   task main();
     $display("VALID READY GEN STARTED \n");
     repeat(repeat_count) begin
+      trans = new();
       if( !trans.randomize() )
           $fatal("Gen:: trans randomization failed");      
       tr = trans.do_copy();

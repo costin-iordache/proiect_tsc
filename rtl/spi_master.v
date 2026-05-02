@@ -1,7 +1,26 @@
+// BUG_NEGEDGE_SCLK
+// BUG_DIVIDER
+// BUG_FIFO_FULL
+// BUG_FIFO_ACCESS
+// BUG_OUTPUT_DATA_POSITION_2
+// BUG_SCLK_TOGGLE_WHILE_SS
+
+`ifndef DATA_WIDTH_SIMULATION
+`define DATA_WIDTH_SIMULATION 4
+`endif
+
+`ifndef FIFO_DEPTH_SIMULATION
+`define FIFO_DEPTH_SIMULATION 8
+`endif
+
+`ifndef DIVIDER_SIMULATION
+`define DIVIDER_SIMULATION 4
+`endif
+
 module spi_master  #(
-parameter DATA_WIDTH = 4,
-parameter FIFO_DEPTH = 8,
-parameter DIVIDER    = 4
+parameter DATA_WIDTH = `DATA_WIDTH_SIMULATION,
+parameter FIFO_DEPTH = `FIFO_DEPTH_SIMULATION,
+parameter DIVIDER    = `DIVIDER_SIMULATION
 )(
 input                     clk      ,
 input                     rst_n    ,
@@ -53,14 +72,26 @@ reg [FIFO_DEPTH-1:0] no_fifo_elements;
 // configurare semnal ready si semnale ajutatoare
 assign ready = ~fifo_full                                   ;
 assign negedge_ss = ~ss && ss_d                             ;
+`ifndef BUG_NEGEDGE_SCLK // daca acest bug este activat, datele se vor scrie si citi pe frontul descrescator de sclk si nu pe cel crescator
 assign posedge_sclk = sclk && ~sclk_d                       ;
+`else
+assign posedge_sclk = ~sclk && sclk_d                       ;
+
+`endif
+
+assign negedge_sclk = ~sclk && sclk_d                       ;
+
 assign bit_load = bit_overflow || negedge_ss                ;
 assign posedge_bit_overflow = ~bit_overflow_d & bit_overflow;
 
 
 // configurare repere pentru fifo
 assign fifo_empty = (no_fifo_elements == 0);
+`ifndef BUG_FIFO_FULL // daca acest bug este activat, semnalul de fifo_full nu va mai fi niciodata 1
 assign fifo_full  = ( no_fifo_elements == FIFO_DEPTH)? 1 : 0;
+`else
+assign fifo_full  = 0;
+`endif
 
 
 // bit_overflow intarziat, folosit pentru a crea posedge_bit_overflow
@@ -70,9 +101,18 @@ if (~rst_n)               bit_overflow_d <= 0           ;else
                           
 
 //semnalul ss/ cip_enable
+
+`ifdef BUG_SCLK_TOGGLE_WHILE_SS // daca este activat acest bug, semnalul sclk se mai modifica (are un front descrescator) si dupa ce semnalul ss s-a dezactivat (s-a dus in 1)
 always @(posedge clk or negedge rst_n)
 if (~rst_n)               ss <= 1         ;else
                           ss <= fifo_empty; 
+`else
+always @(posedge clk or negedge rst_n)
+if (~rst_n)               ss <= 1         ;else
+  if (no_fifo_elements >0) ss<=0;
+  else if (fifo_empty && negedge_sclk) ss <= 1;
+  else ss <= ss;
+`endif
  
  
 //ss intarziat
@@ -98,14 +138,22 @@ if (~rst_n)               sclk_d <= 0   ;else
 //counter pt elementele scrise in fifo
 always @(posedge clk or negedge rst_n)
 if (~rst_n)               w_counter <= 0                         ;else
+`ifndef BUG_FIFO_ACCESS // daca se activeaza acest bug, ultima pozitie din FIFO nu va fi scrisa niciodata cu date
 if (valid && ready )      w_counter <= (w_counter + 1)%FIFO_DEPTH;else
+`else
+if (valid && ready )      w_counter <= (w_counter + 1)%(FIFO_DEPTH-1);else
+`endif
                           w_counter <= w_counter                 ;
 
 
 //counter pt elementele citite din fifo
 always @(posedge clk or negedge rst_n)
 if (~rst_n)                               r_counter <= 0                         ;else
+`ifndef BUG_OUTPUT_DATA_POSITION_2 // daca acest bug este activat, in loc de datele din fifo de pe pozitia 2 se vor transmite pe miso datele din fifo de pe pozitia 0
 if (bit_overflow && posedge_sclk)         r_counter <= (r_counter + 1)%FIFO_DEPTH;else
+`else
+if (bit_overflow && posedge_sclk)         r_counter <= ((r_counter + 1)%FIFO_DEPTH == 2) ? 0: (r_counter + 1)%FIFO_DEPTH;else
+`endif
                                           r_counter <= r_counter                 ;
 
 
@@ -124,7 +172,7 @@ if (~rst_n)                 mosi <= 0;else
 if (~ss && posedge_sclk )   mosi <= fifo[r_counter][real_cnt];
 
 
-//din cauza ca in simulare imi numara un b it in spate
+//din cauza ca in simulare imi numara un bit in spate
 assign real_cnt = bit_cnt+1;
 
 
@@ -167,7 +215,11 @@ counter #(
   .enable_i (sclk_enable  ),
   .up_down_i(1'b0         ),
   .load_i   (sclk_load    ),
+  `ifndef BUG_DIVIDER // daca este activat acest bug, se va modifica frecventa semnalului SCLK
   .data_i   (DIVIDER-2    ),
+  `else
+  .data_i   (DIVIDER/2+1    ),
+  `endif
   .overflow (sclk_overflow),
   .cnt_o    (sclk_cnt     )
 );

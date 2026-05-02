@@ -10,8 +10,10 @@
 
 //-------------------------[NOTE]---------------------------------
 //Particular testcase can be run by uncommenting, and commenting the rest
-//`include "random_test.sv"
-//`include "wr_rd_test.sv"
+// `include "reset_in_timpul_spi.sv"
+// `include "no_valid_test.sv"
+// `include "fifo_full_test.sv"
+// `include "alternate_valid_test.sv"
 `include "basic_test.sv"
 //----------------------------------------------------------------
 

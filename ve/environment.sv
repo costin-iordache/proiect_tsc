@@ -12,7 +12,7 @@
 `include "spi_driver.sv"
 `include "spi_monitor.sv"
 // `include "coverage.sv"
-// `include "scoreboard.sv"
+`include "scoreboard.sv"
 
 class environment;
   
@@ -26,7 +26,7 @@ class environment;
   
   //mailbox handle's
   mailbox vr_gen2driv;
-  mailbox vr_mon2scb;
+  mailbox vr_mon2scbd;
   
   //event for synchronization between generator and test
   event vr_gen_ended;
@@ -36,11 +36,11 @@ class environment;
   spi_driver     spi_driv;
   spi_monitor    spi_mon;
 
-  // scoreboard scb;
+  scoreboard scbd;
   
   //mailbox handle's
   mailbox spi_gen2driv;
-  mailbox spi_mon2scb;
+  mailbox spi_mon2scbd;
 
   coverage cov;
   
@@ -65,19 +65,20 @@ class environment;
     
     //creating the mailbox (Same handle will be shared across generator and driver)
     vr_gen2driv = new();
-    vr_mon2scb  = new();
+    vr_mon2scbd  = new();
     spi_gen2driv = new();
-    spi_mon2scb  = new();
+    spi_mon2scbd  = new();
     
     //componentele de verificare sunt create
-    //creating generator and driver
     vr_gen  = new(vr_gen2driv,vr_gen_ended);
     vr_driv = new(vr_vif,vr_gen2driv);
-    vr_mon  = new(vr_vif,vr_mon2scb,cov);
+    vr_mon  = new(vr_vif,vr_mon2scbd,cov);
 
     spi_gen  = new(spi_gen2driv,spi_gen_ended);
     spi_driv = new(spi_vif,spi_gen2driv);
-    spi_mon  = new(spi_vif,spi_mon2scb,cov);
+    spi_mon  = new(spi_vif,spi_mon2scbd,cov);
+
+    scbd = new(spi_mon2scbd, vr_mon2scbd);
 
   endfunction
   
@@ -100,9 +101,8 @@ class environment;
       spi_driv.main();
       vr_mon.main();
       spi_mon.main();
-      // #1200ns;
+      scbd.main();
     join
-    disable fork;
     $display("[%0t] [ENVIRONMENT] TEST Finish \n", $time);
   endtask
   
@@ -113,26 +113,28 @@ class environment;
     //se urmareste ca toate datele generate sa fie transmise la DUT si sa ajunga si la scoreboard
     wait(vr_gen.repeat_count == vr_driv.no_transactions);
     wait(vr_driv.valid_trans == spi_driv.no_transactions);
-    // wait(vr_gen.repeat_count == scb.no_transactions);
-    $display("[%0t] [ENVIRONMENT] Coverage Results: \n", $time);
-    cov.print_coverage();
+    scbd.compare_transactions();
     $display("[%0t] [ENVIRONMENT] POST-TEST Finish \n", $time);
   endtask  
   
   function report();
     $display("[%0t] [ENVIRONMENT] Test Completed. Reporting the results...", $time);
-    // scb.colector_coverage.print_coverage();
+    scbd.print_results();
+    $display("[%0t] [ENVIRONMENT] Coverage Results: \n", $time);
+    cov.print_coverage();
   endfunction
   
   //run task
   task run;
     $display("[%0t] [ENVIRONMENT] Starting environment... \n", $time);
     pre_test();
+    fork begin
     fork 
       test();
       post_test();
     join_any
     disable fork;
+    end join
     report();
     //linia de mai jos este necesara pentru ca simularea sa sa termine
     $finish;

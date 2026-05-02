@@ -14,7 +14,8 @@ class vr_transaction;
   //aceasta constrangere specifica faptul ca se executa fie o scriere, fie o citire
   //constrangerile sunt aplicate de catre compilator atunci cand atributele clasei primesc valori aleatoare in urma folosirii functiei randomize
      constraint wdata_c;
-     constraint delay_c { delay inside {[0:10]}; };
+     constraint valid_c;
+     constraint delay_c { soft delay inside {[0:10]}; };
   
   //aceasta functie este apelata dupa aplicarea functiei randomize() asupra obiectelor apartinand acestei clase
   //aceasta functie afiseaza valorile aleatorizate ale atributelor clasei

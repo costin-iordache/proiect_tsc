@@ -38,6 +38,7 @@ class vr_monitor;
       //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
       @(posedge vr_vif.clk iff `MON_IF.valid && `MON_IF.ready); 
         trans.wdata  = `MON_IF.data;
+      $display("[%0t] [VR_MONITOR] Received transaction: wdata = %0h", $time, trans.wdata);
       // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
         mon2scb.put(trans);
         cov.sample_vr(trans);

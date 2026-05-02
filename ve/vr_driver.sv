@@ -69,7 +69,7 @@ class vr_driver;
         //Thread-1: Waiting for reset
         begin
           wait(!vr_vif.reset);//linie valabila daca resetul este activ in 0
-          //wait(vr_vif.reset);//linie valabila daca resetul este activ in 1
+          wait(vr_vif.reset);
         end
         //Thread-2: Calling drive task
         begin

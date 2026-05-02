@@ -74,6 +74,7 @@ class spi_driver;
         //Thread-1: Waiting for reset
         begin
           wait(!spi_vif.reset);
+          wait(spi_vif.reset);
         end
         //Thread-2: Calling drive task
         begin

@@ -68,6 +68,7 @@ class spi_monitor;
       fork
         begin 
           wait(!spi_vif.reset);
+          wait(spi_vif.reset);
         end
         begin 
           collect();
